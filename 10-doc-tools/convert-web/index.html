@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能文档转换台</title>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --bg: #f8fafc;
+            --card-bg: rgba(255, 255, 255, 0.8);
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #1e293b;
+        }
+        .container {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: 24px;
+            padding: 40px;
+            width: 90%;
+            max-width: 680px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+        }
+        h1 {
+            margin: 0 0 8px 0;
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(to right, #4f46e5, #ec4899);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        p.subtitle {
+            color: #64748b;
+            margin: 0 0 32px 0;
+            font-size: 15px;
+        }
+        #drop-zone {
+            border: 2px dashed #cbd5e1;
+            border-radius: 16px;
+            padding: 60px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.5);
+        }
+        #drop-zone:hover, #drop-zone.dragover {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.05);
+            transform: translateY(-2px);
+        }
+        .drop-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            display: block;
+        }
+        .drop-text {
+            font-weight: 500;
+            color: #475569;
+            font-size: 16px;
+        }
+        .drop-sub {
+            font-size: 13px;
+            color: #94a3b8;
+            margin-top: 8px;
+        }
+        #status {
+            margin: 24px 0 0 0;
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            display: none;
+            text-align: left;
+            animation: fadeIn 0.3s ease;
+            word-break: break-all;
+        }
+        .status-processing {
+            background: #eff6ff;
+            color: #1d4ed8;
+            border: 1px solid #bfdbfe;
+            display: block !important;
+        }
+        .status-success {
+            background: #ecfdf5;
+            color: #047857;
+            border: 1px solid #a7f3d0;
+            display: block !important;
+        }
+        .status-error {
+            background: #fef2f2;
+            color: #b91c1c;
+            border: 1px solid #fecaca;
+            display: block !important;
+        }
+        .file-list {
+            margin-top: 32px;
+        }
+        .file-list-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #64748b;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            background: white;
+            border-radius: 12px;
+            margin-bottom: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            border: 1px solid #e2e8f0;
+            transition: box-shadow 0.2s;
+        }
+        .file-item:hover {
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        }
+        .file-name {
+            font-weight: 500;
+            color: #334155;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .file-size {
+            font-size: 12px;
+            color: #94a3b8;
+        }
+        .btn-download {
+            background: var(--primary);
+            color: white;
+            text-decoration: none;
+            padding: 6px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+        .btn-download:hover {
+            background: var(--primary-hover);
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(29,78,216,0.3);
+            border-radius: 50%;
+            border-top-color: #1d4ed8;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>智能文档转换台</h1>
+        <p class="subtitle">支持 PDF / PPTX / DOCX，自动转 Markdown 并同步至知识库</p>
+        
+        <div id="drop-zone">
+            <span class="drop-icon">📄</span>
+            <div class="drop-text">点击选择或拖拽文件到此处</div>
+            <div class="drop-sub">转换将自动保存并推送到 AI 知识库</div>
+            <input type="file" id="file-input" multiple style="display: none;">
+        </div>
+
+        <div id="status"></div>
+
+        <div class="file-list">
+            <div class="file-list-title">最近转换的文件</div>
+            <div id="file-items"></div>
+        </div>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const statusEl = document.getElementById('status');
+        const fileItems = document.getElementById('file-items');
+
+        dropZone.onclick = () => fileInput.click();
+        fileInput.onchange = () => handleFiles(fileInput.files);
+
+        dropZone.ondragover = (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        };
+        dropZone.ondragleave = () => dropZone.classList.remove('dragover');
+        dropZone.ondrop = (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            handleFiles(e.dataTransfer.files);
+        };
+
+        async function handleFiles(files) {
+            if (!files.length) return;
+            
+            for (const file of files) {
+                const formData = new FormData();
+                formData.append('file', file);
+
+                showStatus(`<span class="spinner"></span> 正在转换 ${file.name}...`, 'processing');
+
+                try {
+                    const resp = await fetch('/convert', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const data = await resp.json();
+                    
+                    if (data.ok) {
+                        let msg = `✅ ${data.filename} 转换成功`;
+                        if (data.uploaded) {
+                            msg += `，并已自动同步至知识库`;
+                        } else {
+                            msg += `，但未同步至知识库 (错误: ${data.err_msg})`;
+                        }
+                        showStatus(msg, 'success');
+                    } else {
+                        showStatus(`❌ 转换失败: ${data.error}`, 'error');
+                    }
+                } catch (err) {
+                    showStatus(`❌ 网络错误: ${err.message}`, 'error');
+                }
+            }
+            loadFiles();
+        }
+
+        function showStatus(msg, type) {
+            statusEl.innerHTML = msg;
+            statusEl.className = `status-${type}`;
+        }
+
+        async function loadFiles() {
+            try {
+                const resp = await fetch('/files');
+                const files = await resp.json();
+                if (!files.length) {
+                    fileItems.innerHTML = '<div style="color:#94a3b8; font-size:14px; text-align:center; padding:20px 0;">暂无转换记录</div>';
+                    return;
+                }
+                fileItems.innerHTML = files.map(f => `
+                    <div class="file-item">
+                        <div class="file-name">
+                            <span style="font-size:20px;">📄</span>
+                            <div>
+                                <div>${f.name}</div>
+                                <div class="file-size">${(f.size/1024).toFixed(1)} KB</div>
+                            </div>
+                        </div>
+                        <a href="/download/${encodeURIComponent(f.name)}" class="btn-download">下载</a>
+                    </div>
+                `).join('');
+            } catch (e) {
+                fileItems.innerHTML = '';
+            }
+        }
+
+        loadFiles();
+    </script>
+</body>
+</html>

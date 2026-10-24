@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>像素日历 · 笺启</title>
+    <style>
+        @font-face {
+            font-family: 'Zpix';
+            src: url('/fonts/zpix.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        :root {
+            --bg-top: #FFE4EC;
+            --bg-bottom: #FFF0F5;
+            --card-bg: #FFFFFF;
+            --border: #C2185B;
+            --shadow: #F48FB1;
+            --text: #C2185B;
+            --primary: #FF8FB1;
+            --primary-hover: #FF6F91;
+        }
+        
+        body { 
+            font-family: 'Zpix', "Courier New", monospace, "SimSun"; 
+            background: linear-gradient(135deg, var(--bg-top) 0%, var(--bg-bottom) 100%);
+            color: var(--text); 
+            margin: 0; 
+            padding: 20px; 
+            min-height: 100vh;
+            user-select: none;
+        }
+
+        .header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            max-width: 1000px; 
+            margin: 0 auto 20px auto; 
+            background: var(--card-bg);
+            padding: 15px 25px;
+            border: 3px solid var(--border);
+            box-shadow: 6px 6px 0px var(--shadow);
+        }
+
+        .month-nav { 
+            font-size: 24px; 
+            font-weight: bold; 
+            display: flex; 
+            align-items: center; 
+            gap: 20px; 
+            color: var(--text);
+            text-shadow: 1px 1px 0px #fff;
+        }
+
+        .month-nav button { 
+            background: var(--card-bg); 
+            border: 3px solid var(--border); 
+            color: var(--text); 
+            width: 40px; 
+            height: 40px; 
+            cursor: pointer; 
+            font-size: 18px;
+            font-weight: bold;
+            box-shadow: 3px 3px 0px var(--shadow);
+            transition: all 0.1s;
+            font-family: inherit;
+        }
+
+        .month-nav button:active { 
+            transform: translate(3px, 3px);
+            box-shadow: 0px 0px 0px var(--shadow);
+        }
+
+        .calendar { 
+            display: grid; 
+            grid-template-columns: repeat(7, 1fr); 
+            gap: 12px; 
+            max-width: 1000px; 
+            margin: 0 auto; 
+        }
+
+        .day-name { 
+            text-align: center; 
+            font-weight: bold; 
+            color: var(--border); 
+            padding-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .day { 
+            background: var(--card-bg); 
+            min-height: 120px; 
+            padding: 8px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 6px; 
+            cursor: pointer; 
+            position: relative; 
+            border: 3px solid var(--border);
+            box-shadow: 4px 4px 0px var(--shadow);
+            transition: all 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .day:hover { 
+            transform: translate(-2px, -2px); 
+            box-shadow: 6px 6px 0px var(--border); 
+            background: #FFF8FA;
+        }
+
+        .day:active {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0px var(--shadow);
+        }
+
+        .day.other-month { opacity: 0.4; pointer-events: none; }
+        
+        .day.today { 
+            background: var(--bg-top); 
+            border-color: var(--text);
+            box-shadow: 4px 4px 0px var(--text);
+        }
+
+        .date-num { 
+            font-size: 16px; 
+            font-weight: bold; 
+            text-align: right; 
+            margin-bottom: 2px; 
+            color: var(--border);
+        }
+
+        .sticker { 
+            position: absolute; 
+            top: 5px; 
+            left: 5px; 
+            font-size: 24px; 
+            pointer-events: none; 
+            filter: drop-shadow(2px 2px 0px rgba(0,0,0,0.2)); 
+        }
+
+        .task { 
+            font-size: 12px; 
+            padding: 6px 8px; 
+            background: #FFF; 
+            color: #333; 
+            border: 2px solid var(--border);
+            word-break: break-all; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            position: relative;
+            box-shadow: 2px 2px 0px rgba(0,0,0,0.1);
+            animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .task:hover { 
+            transform: scale(1.02);
+            background: #FFF0F5;
+        }
+
+        .task.done { 
+            text-decoration: line-through; 
+            opacity: 0.5; 
+            filter: grayscale(1); 
+        }
+        
+        @keyframes popIn { 
+            0% { transform: scale(0.5); opacity: 0; } 
+            100% { transform: scale(1); opacity: 1; } 
+        }
+
+        .task-c-yellow { background: #FFF176; border-color: #FBC02D; }
+        .task-c-purple { background: #E1BEE7; border-color: #8E24AA; }
+        .task-c-blue   { background: #81D4FA; border-color: #0277BD; }
+        .task-c-green  { background: #A5D6A7; border-color: #2E7D32; }
+        .task-c-red    { background: #EF9A9A; border-color: #C62828; }
+
+        .modal { 
+            display: none; 
+            position: fixed; 
+            top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(255, 228, 236, 0.8); 
+            justify-content: center; 
+            align-items: center; 
+            z-index: 100; 
+            backdrop-filter: blur(3px); 
+        }
+
+        .modal-content { 
+            background: var(--card-bg); 
+            padding: 25px; 
+            width: 340px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 15px; 
+            border: 3px solid var(--border);
+            box-shadow: 8px 8px 0px var(--shadow);
+            animation: popIn 0.3s;
+            font-family: 'Zpix', "Courier New", monospace;
+        }
+
+        .modal-content h3 { 
+            margin: 0 0 10px 0; 
+            font-size: 18px; 
+            text-align: center; 
+            color: var(--text);
+            border-bottom: 2px dashed var(--shadow);
+            padding-bottom: 10px;
+        }
+
+        .modal-content input { 
+            padding: 12px; 
+            border: 3px solid var(--shadow); 
+            background: var(--bg-bottom); 
+            color: var(--text); 
+            outline: none; 
+            font-family: 'Zpix', "Courier New", monospace;
+            font-weight: bold;
+            box-shadow: inset 2px 2px 0px rgba(0,0,0,0.05);
+            transition: 0.2s;
+        }
+
+        .modal-content input:focus { border-color: var(--border); }
+
+        .section-title { 
+            font-size: 14px; 
+            font-weight: bold; 
+            color: var(--border); 
+            margin-bottom: -5px;
+        }
+        
+        .colors, .stickers { 
+            display: flex; 
+            gap: 10px; 
+            justify-content: center; 
+            flex-wrap: wrap; 
+            background: var(--bg-bottom);
+            padding: 10px;
+            border: 2px solid var(--shadow);
+        }
+
+        .color-opt { 
+            width: 28px; height: 28px; 
+            cursor: pointer; 
+            border: 2px solid transparent; 
+            box-shadow: 2px 2px 0px rgba(0,0,0,0.2);
+            transition: 0.1s;
+        }
+        .color-opt:hover { transform: translateY(-2px); }
+        .color-opt.selected { border-color: var(--border); transform: translateY(-2px); }
+
+        .sticker-opt { 
+            font-size: 20px; 
+            cursor: pointer; 
+            padding: 4px; 
+            border: 2px solid transparent; 
+            transition: 0.1s;
+            background: white;
+        }
+        .sticker-opt:hover { transform: scale(1.2); }
+        .sticker-opt.selected { border-color: var(--border); background: var(--bg-top); }
+
+        .btns { 
+            display: flex; 
+            justify-content: space-between; 
+            gap: 10px; 
+            margin-top: 10px; 
+        }
+
+        .btns button { 
+            flex: 1; 
+            padding: 12px; 
+            border: 3px solid var(--border); 
+            font-weight: bold; 
+            cursor: pointer; 
+            font-family: 'Zpix', "Courier New", monospace;
+            box-shadow: 3px 3px 0px var(--shadow);
+            transition: all 0.1s;
+        }
+
+        .btns button:active { 
+            transform: translate(3px, 3px);
+            box-shadow: 0px 0px 0px var(--shadow);
+        }
+
+        .btn-del { background: #EF9A9A; color: #B71C1C; display: none; border-color: #B71C1C; box-shadow: 3px 3px 0px #E57373; }
+        .btn-del:active { box-shadow: 0px 0px 0px #E57373; }
+        
+        .btn-cancel { background: #E0E0E0; color: #555; }
+        .btn-save { background: var(--primary); color: white; }
+        .btn-save:hover { background: var(--primary-hover); }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="month-nav">
+            <button onclick="changeMonth(-1)">❮</button>
+            <span id="monthLabel"></span>
+            <button onclick="changeMonth(1)">❯</button>
+        </div>
+    </div>
+    <div class="calendar" id="calendar">
+        <div class="day-name">一</div><div class="day-name">二</div><div class="day-name">三</div><div class="day-name">四</div>
+        <div class="day-name">五</div><div class="day-name">六</div><div class="day-name">日</div>
+    </div>
+
+    <div class="modal" id="taskModal">
+        <div class="modal-content">
+            <h3 id="modalTitle">🐾 添加日程</h3>
+            <input type="text" id="taskInput" placeholder="输入任务内容...">
+            
+            <div class="section-title">🎨 选择颜色</div>
+            <div class="colors">
+                <div class="color-opt task-c-yellow" style="background:#FFF176; border-color:#FBC02D" onclick="selectColor('yellow')" id="c-yellow"></div>
+                <div class="color-opt task-c-purple" style="background:#E1BEE7; border-color:#8E24AA" onclick="selectColor('purple')" id="c-purple"></div>
+                <div class="color-opt task-c-blue" style="background:#81D4FA; border-color:#0277BD" onclick="selectColor('blue')" id="c-blue"></div>
+                <div class="color-opt task-c-green" style="background:#A5D6A7; border-color:#2E7D32" onclick="selectColor('green')" id="c-green"></div>
+                <div class="color-opt task-c-red" style="background:#EF9A9A; border-color:#C62828" onclick="selectColor('red')" id="c-red"></div>
+            </div>
+
+            <div class="section-title">🌸 贴纸 (可选)</div>
+            <div class="stickers">
+                <div class="sticker-opt" onclick="selectSticker('')">🚫</div>
+                <div class="sticker-opt" onclick="selectSticker('📚')">📚</div>
+                <div class="sticker-opt" onclick="selectSticker('🐱')">🐱</div>
+                <div class="sticker-opt" onclick="selectSticker('🌸')">🌸</div>
+                <div class="sticker-opt" onclick="selectSticker('☕️')">☕️</div>
+                <div class="sticker-opt" onclick="selectSticker('🎉')">🎉</div>
+            </div>
+
+            <div class="btns">
+                <button class="btn-del" id="btnDel" onclick="deleteTask()">删除</button>
+                <button class="btn-cancel" onclick="closeModal()">取消</button>
+                <button class="btn-save" onclick="saveTask()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentDate = new Date();
+        let currentMonth = currentDate.getMonth();
+        let currentYear = currentDate.getFullYear();
+        let calendarData = {};
+        
+        let selectedDateStr = "";
+        let selectedColor = "blue";
+        let selectedSticker = "";
+        let editingTaskIndex = -1;
+
+        async function loadData() {
+            const res = await fetch('/api/calendar');
+            calendarData = await res.json();
+            renderCalendar();
+        }
+
+        function renderCalendar() {
+            const calEl = document.getElementById('calendar');
+            const monthLabel = document.getElementById('monthLabel');
+            const months = ["1月","2月","3月","4月","5月","6月","7月","8月","9月","10月","11月","12月"];
+            monthLabel.textContent = `${currentYear}年 ${months[currentMonth]}`;
+
+            while(calEl.children.length > 7) calEl.removeChild(calEl.lastChild);
+
+            const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+            const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+            const startOffset = firstDay === 0 ? 6 : firstDay - 1;
+
+            for (let i = 0; i < startOffset; i++) {
+                const div = document.createElement('div');
+                div.className = 'day other-month';
+                calEl.appendChild(div);
+            }
+
+            for (let d = 1; d <= daysInMonth; d++) {
+                const div = document.createElement('div');
+                div.className = 'day';
+                
+                const today = new Date();
+                if (d === today.getDate() && currentMonth === today.getMonth() && currentYear === today.getFullYear()) {
+                    div.classList.add('today');
+                }
+
+                const dateStr = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                div.innerHTML = `<div class="date-num">${d}</div>`;
+                
+                const dayData = calendarData[dateStr] || {};
+                
+                if (dayData.sticker) {
+                    const s = document.createElement('div');
+                    s.className = 'sticker';
+                    s.textContent = dayData.sticker;
+                    div.appendChild(s);
+                }
+
+                if (dayData.tasks && dayData.tasks.length > 0) {
+                    dayData.tasks.forEach((task, idx) => {
+                        const t = document.createElement('div');
+                        t.className = `task task-c-${task.color} ${task.done ? 'done' : ''}`;
+                        t.innerHTML = `<span>${task.text}</span>`;
+                        
+                        t.onclick = (e) => {
+                            e.stopPropagation();
+                            openModal(dateStr, idx);
+                        };
+                        div.appendChild(t);
+                    });
+                }
+
+                div.onclick = () => openModal(dateStr, -1);
+                calEl.appendChild(div);
+            }
+        }
+
+        function changeMonth(offset) {
+            currentMonth += offset;
+            if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+            else if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+            renderCalendar();
+        }
+
+        function openModal(dateStr, taskIdx = -1) {
+            selectedDateStr = dateStr;
+            editingTaskIndex = taskIdx;
+            
+            const dayData = calendarData[dateStr] || {};
+            const tasks = dayData.tasks || [];
+            const task = taskIdx >= 0 ? tasks[taskIdx] : null;
+
+            document.getElementById('modalTitle').textContent = taskIdx >= 0 ? `📝 编辑日程 (${dateStr})` : `🐾 添加日程 (${dateStr})`;
+            document.getElementById('taskInput').value = task ? task.text : "";
+            
+            selectColor(task ? task.color : 'blue');
+            selectSticker(dayData.sticker || '');
+
+            document.getElementById('btnDel').style.display = taskIdx >= 0 ? 'block' : 'none';
+
+            document.getElementById('taskModal').style.display = 'flex';
+            if (taskIdx === -1) document.getElementById('taskInput').focus();
+        }
+
+        function closeModal() {
+            document.getElementById('taskModal').style.display = 'none';
+        }
+
+        function selectColor(color) {
+            selectedColor = color;
+            document.querySelectorAll('.color-opt').forEach(el => el.classList.remove('selected'));
+            document.getElementById(`c-${color}`).classList.add('selected');
+        }
+
+        function selectSticker(sticker) {
+            selectedSticker = sticker;
+            document.querySelectorAll('.sticker-opt').forEach(el => el.classList.remove('selected'));
+            const opts = document.querySelectorAll('.sticker-opt');
+            opts.forEach(el => { if(el.textContent === sticker || (sticker === '' && el.textContent === '🚫')) el.classList.add('selected'); });
+        }
+
+        async function saveTask() {
+            const text = document.getElementById('taskInput').value.trim();
+            if (!calendarData[selectedDateStr]) calendarData[selectedDateStr] = {};
+            
+            calendarData[selectedDateStr].sticker = selectedSticker;
+            if (!calendarData[selectedDateStr].tasks) calendarData[selectedDateStr].tasks = [];
+            
+            if (text) {
+                if (editingTaskIndex >= 0) {
+                    calendarData[selectedDateStr].tasks[editingTaskIndex].text = text;
+                    calendarData[selectedDateStr].tasks[editingTaskIndex].color = selectedColor;
+                } else {
+                    calendarData[selectedDateStr].tasks.push({ text: text, color: selectedColor, done: false });
+                }
+            }
+            
+            closeModal();
+            renderCalendar();
+            await saveData();
+        }
+
+        async function deleteTask() {
+            if (editingTaskIndex >= 0) {
+                calendarData[selectedDateStr].tasks.splice(editingTaskIndex, 1);
+                if (calendarData[selectedDateStr].tasks.length === 0) {
+                    delete calendarData[selectedDateStr].tasks;
+                }
+                closeModal();
+                renderCalendar();
+                await saveData();
+            }
+        }
+
+        async function saveData() {
+            await fetch('/api/calendar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ data: calendarData })
+            });
+        }
+
+        loadData();
+    </script>
+</body>
+</html>

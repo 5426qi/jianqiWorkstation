@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>像素转换台 · 笺启</title>
+    <style>
+        @font-face { font-family: 'Zpix'; src: url('/fonts/zpix.ttf') format('truetype'); }
+        :root { --bg-top: #FFE4EC; --bg-bottom: #FFF0F5; --card: #FFFFFF; --border: #C2185B; --shadow: #F48FB1; --text: #C2185B; --primary: #FF8FB1; }
+        
+        body { font-family: 'Zpix', "Courier New", monospace; background: linear-gradient(135deg, var(--bg-top), var(--bg-bottom)); margin: 0; min-height: 100vh; display: flex; justify-content: center; align-items: center; color: var(--text); user-select: none; }
+        
+        .container { width: 100%; max-width: 680px; padding: 20px; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .header h1 { font-size: 28px; text-shadow: 2px 2px 0px #fff; margin: 0 0 10px 0; }
+        
+        /* 标签页 */
+        .tabs { display: flex; gap: 10px; margin-bottom: 15px; }
+        .tab { flex: 1; text-align: center; background: var(--card); padding: 12px; font-size: 16px; font-weight: bold; cursor: pointer; border: 3px solid var(--border); box-shadow: 4px 4px 0px var(--shadow); transition: 0.1s; }
+        .tab.active { background: var(--primary); color: white; transform: translate(2px, 2px); box-shadow: 2px 2px 0px var(--shadow); }
+        
+        /* 卡片区 */
+        .card { background: var(--card); border: 3px solid var(--border); box-shadow: 6px 6px 0px var(--shadow); padding: 30px; display: none; flex-direction: column; gap: 20px; animation: popIn 0.3s; }
+        .card.active { display: flex; }
+        
+        .drop-zone { border: 3px dashed var(--shadow); background: var(--bg-bottom); padding: 60px 20px; text-align: center; cursor: pointer; transition: 0.2s; }
+        .drop-zone:hover, .drop-zone.dragover { background: var(--bg-top); border-color: var(--border); transform: translateY(-2px); }
+        .drop-icon { font-size: 48px; margin-bottom: 15px; display: block; }
+        .drop-text { font-size: 18px; font-weight: bold; margin-bottom: 5px; }
+        .drop-sub { font-size: 14px; color: #888; }
+        
+        #status-doc, #status-media { padding: 15px; font-weight: bold; text-align: center; display: none; border: 3px solid; animation: popIn 0.2s; word-break: break-all; }
+        .status-processing { display: block !important; background: #FFF8E1; color: #F57F17; border-color: #F57F17; }
+        .status-success { display: block !important; background: #E8F5E9; color: #2E7D32; border-color: #2E7D32; }
+        .status-error { display: block !important; background: #FFEBEE; color: #C62828; border-color: #C62828; }
+        
+        /* 列表 */
+        .file-list { margin-top: 10px; }
+        .file-item { display: flex; justify-content: space-between; align-items: center; background: var(--bg-bottom); padding: 12px 15px; border: 2px solid var(--shadow); margin-bottom: 8px; font-size: 14px; }
+        .file-item a { background: var(--primary); color: white; padding: 6px 12px; text-decoration: none; font-weight: bold; border: 2px solid var(--border); box-shadow: 2px 2px 0px var(--shadow); transition: 0.1s; }
+        .file-item a:active { transform: translate(2px, 2px); box-shadow: 0px 0px 0px var(--shadow); }
+        
+        @keyframes popIn { 0% { transform: scale(0.9); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        
+        /* 加载小圈 */
+        .spinner { display: inline-block; width: 16px; height: 16px; border: 3px solid var(--border); border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; vertical-align: middle; margin-right: 8px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌸 像素转换台 🐱</h1>
+        </div>
+        
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('doc')">📄 文档转换</div>
+            <div class="tab" onclick="switchTab('media')">🎬 音视频分析</div>
+        </div>
+
+        <div id="card-doc" class="card active">
+            <div class="drop-zone" id="drop-doc">
+                <span class="drop-icon">📄</span>
+                <div class="drop-text">点击选择或拖拽文档到此处</div>
+                <div class="drop-sub">支持 PDF / PPTX / DOCX</div>
+                <input type="file" id="file-doc" multiple style="display: none;">
+            </div>
+            <div id="status-doc"></div>
+        </div>
+
+        <div id="card-media" class="card">
+            <div class="drop-zone" id="drop-media">
+                <span class="drop-icon">🎬</span>
+                <div class="drop-text">点击选择或拖拽音视频到此处</div>
+                <div class="drop-sub">支持 MP4 / MP3 / WAV / M4A</div>
+                <input type="file" id="file-media" multiple style="display: none;">
+            </div>
+            <div id="status-media"></div>
+        </div>
+
+        <div class="file-list">
+            <div style="font-weight:bold; margin-bottom:10px; font-size:14px;">📁 最近的文件</div>
+            <div id="file-items"></div>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
+            if(tab === 'doc') {
+                document.querySelectorAll('.tab')[0].classList.add('active');
+                document.getElementById('card-doc').classList.add('active');
+            } else {
+                document.querySelectorAll('.tab')[1].classList.add('active');
+                document.getElementById('card-media').classList.add('active');
+            }
+        }
+
+        function setupUpload(zoneId, inputId, statusId, endpoint) {
+            const zone = document.getElementById(zoneId);
+            const input = document.getElementById(inputId);
+            const status = document.getElementById(statusId);
+
+            zone.onclick = () => input.click();
+            input.onchange = () => upload(input.files, status, endpoint);
+            zone.ondragover = (e) => { e.preventDefault(); zone.classList.add('dragover'); };
+            zone.ondragleave = () => zone.classList.remove('dragover');
+            zone.ondrop = (e) => { e.preventDefault(); zone.classList.remove('dragover'); upload(e.dataTransfer.files, status, endpoint); };
+        }
+
+        async function upload(files, statusEl, endpoint) {
+            if (!files.length) return;
+            for (const file of files) {
+                const fd = new FormData();
+                fd.append('file', file);
+                
+                statusEl.className = 'status-processing';
+                statusEl.innerHTML = `<span class="spinner"></span> 正在处理 ${file.name}，请稍候...`;
+                
+                try {
+                    const resp = await fetch(endpoint, { method: 'POST', body: fd });
+                    const data = await resp.json();
+                    
+                    if (data.ok) {
+                        let msg = `✅ ${data.filename} 处理完成`;
+                        if (data.uploaded) msg += `，已自动同步至知识库`;
+                        else msg += ` (但未同步: ${data.err_msg})`;
+                        statusEl.className = 'status-success';
+                        statusEl.innerHTML = msg;
+                    } else {
+                        statusEl.className = 'status-error';
+                        statusEl.innerHTML = `❌ 失败: ${data.error}`;
+                    }
+                } catch (err) {
+                    statusEl.className = 'status-error';
+                    statusEl.innerHTML = `❌ 网络错误: ${err.message}`;
+                }
+            }
+            loadFiles();
+        }
+
+        setupUpload('drop-doc', 'file-doc', 'status-doc', '/convert');
+        setupUpload('drop-media', 'file-media', 'status-media', '/convert_media');
+
+        async function loadFiles() {
+            try {
+                const resp = await fetch('/files');
+                const files = await resp.json();
+                const items = document.getElementById('file-items');
+                if (!files.length) {
+                    items.innerHTML = '<div style="color:#999; font-size:14px; text-align:center;">暂无记录</div>';
+                    return;
+                }
+                items.innerHTML = files.map(f => `
+                    <div class="file-item">
+                        <span>📄 ${f.name}</span>
+                        <a href="/download/${encodeURIComponent(f.name)}">下载</a>
+                    </div>
+                `).join('');
+            } catch (e) { }
+        }
+        loadFiles();
+    </script>
+</body>
+</html>

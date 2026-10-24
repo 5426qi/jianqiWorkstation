@@ -1,0 +1,9 @@
+{
+    "name": "📄  打开 转换台",
+    "type": "service",
+    "port": 13120,
+    "cmd": "..\\..\\10-doc-tools\\inkdoc-src\\.venv\\Scripts\\python.exe app.py",
+    "url": "http://127.0.0.1:13120",
+    "color": "btn2",
+    "hover": "btn2_hover"
+}

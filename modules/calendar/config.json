@@ -1,0 +1,9 @@
+{
+    "name": "📅  打开 日程日历",
+    "type": "service",
+    "port": 13121,
+    "cmd": "..\\..\\10-doc-tools\\inkdoc-src\\.venv\\Scripts\\python.exe app.py",
+    "url": "http://127.0.0.1:13121",
+    "color": "btn_cal",
+    "hover": "btn_cal_hover"
+}

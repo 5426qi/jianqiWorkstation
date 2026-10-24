@@ -1,0 +1,7 @@
+{
+    "name": "🧹  知识库去重同步",
+    "type": "action",
+    "url": "",
+    "color": "btn_sync",
+    "hover": "btn_sync_hover"
+}

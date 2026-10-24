@@ -1,0 +1,19 @@
+__pycache__/
+*.log
+.env
+*.webui_secret_key
+
+# 屏蔽所有大模型和数据库数据
+00-ai-base/
+30-models/
+10-doc-tools/whisper-models/
+10-doc-tools/inkdoc-src/
+
+# 屏蔽第三方开源库和大型软件 (别人自己可以去下载)
+20-curator/
+30-obsidian/
+
+# 屏蔽个人笔记和处理结果
+_processed/
+_workflow/
+_private_backup/
