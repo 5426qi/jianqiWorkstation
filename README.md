@@ -24,3 +24,4 @@
 如果你想自己开发插件，只需在 `modules` 目录下新建一个文件夹，放入 `config.json` 和你的 FastAPI 后端，重启主面板即可自动生成对应按钮。
 
 *注意：本仓库不包含模型文件（GGUF/Whisper），请自行下载。*
+<img width="1280" height="800" alt="屏幕截图 2026-10-24 200303" src="https://github.com/user-attachments/assets/899d759f-c598-47d3-b3c5-51b8cdf03395" />
